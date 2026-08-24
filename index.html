@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#12161c">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<title>Bandit rack count — Remus</title>
+<style>
+:root{
+  --ink:#12161c; --ink2:#4a5462; --line:#d6dbe2; --bg:#f4f6f9; --card:#fff;
+  --blue:#0b4f9e; --blue-bg:#e8f0fb;
+  --green:#106b3c; --green-bg:#e6f4ec;
+  --amber:#8a5a00; --amber-bg:#fdf3e0;
+  --red:#a01c1c;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{margin:0; padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  padding:0 0 40px;
+}
+.wrap{max-width:640px; margin:0 auto; padding:0 12px}
+
+/* ---------- header ---------- */
+header{
+  background:var(--ink); color:#fff; padding:14px 12px 16px; margin-bottom:14px;
+}
+header .inner{max-width:640px; margin:0 auto}
+header h1{margin:0; font-size:19px; letter-spacing:-.2px}
+header p{margin:3px 0 0; font-size:13px; color:#a8b3c2}
+.meta{display:flex; gap:8px; margin-top:12px}
+.meta label{flex:1; display:block}
+.meta span{display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.09em; color:#8d99a8; margin-bottom:4px}
+.meta input{
+  width:100%; padding:9px 10px; border:1px solid #3a4452; border-radius:7px;
+  background:#1c222b; color:#fff; font-size:15px; font-family:inherit;
+}
+
+/* ---------- instruction strip ---------- */
+.how{
+  background:var(--blue-bg); border:1px solid #c3d7f0; border-left:4px solid var(--blue);
+  border-radius:8px; padding:11px 13px; margin-bottom:16px; font-size:13.5px; color:#123;
+}
+.how b{color:var(--blue)}
+
+.pending{
+  background:var(--amber-bg); border:1px solid #eeddb0; border-left:4px solid var(--amber);
+  border-radius:8px; padding:11px 13px; margin-bottom:14px; font-size:13.5px; color:#4a3a00;
+  display:none;
+}
+.pending b{color:var(--amber)}
+
+/* ---------- part card ---------- */
+.part{
+  background:var(--card); border:1px solid var(--line); border-radius:10px;
+  margin-bottom:11px; overflow:hidden;
+}
+.part.pal{border-left:4px solid var(--amber)}
+.phead{padding:11px 13px 10px; border-bottom:1px solid #eceff3}
+.pn{font-size:22px; font-weight:700; letter-spacing:-.4px; font-variant-numeric:tabular-nums}
+.pn .alt{font-size:14px; font-weight:500; color:#8d99a8; letter-spacing:0}
+.pd{font-size:13.5px; color:var(--ink2); margin-top:2px}
+.psap{font-size:11.5px; color:#7b8695; margin-top:3px; font-variant-numeric:tabular-nums}
+.pfill{
+  display:inline-block; margin-top:7px; font-size:11px; font-weight:600;
+  text-transform:uppercase; letter-spacing:.06em; padding:3px 8px; border-radius:20px;
+  background:#eef1f5; color:#4a5462;
+}
+.part.pal .pfill{background:var(--amber-bg); color:var(--amber)}
+
+.rows{padding:4px 13px 12px}
+.row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid #f2f4f7}
+.row:last-child{border-bottom:0}
+.rlab{flex:1; font-size:14px; font-weight:600}
+.rlab em{display:block; font-style:normal; font-weight:400; font-size:11.5px; color:#7b8695; margin-top:1px}
+.step{display:flex; align-items:center; gap:0; flex:none}
+.step button{
+  width:46px; height:46px; border:1px solid var(--line); background:#fff; color:var(--ink);
+  font-size:24px; font-weight:600; line-height:1; cursor:pointer; font-family:inherit;
+  display:flex; align-items:center; justify-content:center;
+}
+.step button:active{background:#e9edf2}
+.step button.minus{border-radius:8px 0 0 8px}
+.step button.plus{border-radius:0 8px 8px 0}
+.step input{
+  width:56px; height:46px; border:1px solid var(--line); border-left:0; border-right:0;
+  text-align:center; font-size:19px; font-weight:700; font-family:inherit; color:var(--ink);
+  background:#fff; font-variant-numeric:tabular-nums; -moz-appearance:textfield;
+}
+.step input::-webkit-outer-spin-button,.step input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+.step input:focus{outline:2px solid var(--blue); outline-offset:-2px}
+
+.calc{
+  background:var(--green-bg); border-top:1px solid #cfe6d9; padding:9px 13px;
+  font-size:13.5px; color:var(--green); font-weight:600; display:flex; justify-content:space-between;
+}
+.calc.zero{background:#f6f7f9; border-top-color:#eceff3; color:#8d99a8}
+.calc.urg{background:#fbe9e9; border-top-color:#eecccc; color:var(--red)}
+.calc b{font-variant-numeric:tabular-nums}
+
+/* ran-out alarm */
+.alarm{
+  background:#fbe9e9; border:1px solid #e4bcbc; border-left:5px solid var(--red);
+  border-radius:8px; padding:13px; margin-bottom:14px; font-size:14.5px; color:var(--red);
+  line-height:1.5;
+}
+.alarm b{display:block; font-size:16px; margin-bottom:2px}
+
+/* rack check */
+.checkbox{background:#fff; border:1px solid var(--line); border-radius:10px; padding:11px 13px}
+.ck{display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid #f2f4f7; font-size:14px}
+.ck:last-child{border-bottom:0}
+.ck span{flex:1; font-weight:600; font-variant-numeric:tabular-nums}
+.ck b{font-variant-numeric:tabular-nums; color:var(--ink2); font-weight:600}
+.ck i{width:112px; text-align:right; font-style:normal; font-size:12px; color:var(--green)}
+.ck.off i{color:var(--red); font-weight:600}
+.ck.off span{color:var(--red)}
+
+/* pallet state selector — one container, so it is a state, not a count */
+.row.seg{border-bottom:0; padding-bottom:2px}
+.segbtns{display:flex; gap:6px; padding:2px 0 10px}
+.segbtns button{
+  flex:1; padding:14px 4px; border:1px solid var(--line); border-radius:8px; background:#fff;
+  font-size:13.5px; font-weight:600; font-family:inherit; color:var(--ink2); cursor:pointer;
+}
+.segbtns button.on{background:var(--ink); color:#fff; border-color:var(--ink)}
+.segbtns button.on.amb{background:var(--amber); border-color:var(--amber)}
+.segbtns button.on.red{background:var(--red); border-color:var(--red)}
+.segbtns button:active{opacity:.75}
+
+/* ---------- totals + output ---------- */
+h2.sec{
+  font-size:11px; text-transform:uppercase; letter-spacing:.11em; color:#7b8695;
+  margin:22px 0 9px; font-weight:700;
+}
+.tot{
+  background:var(--ink); color:#fff; border-radius:10px; padding:14px;
+  display:flex; gap:8px; text-align:center;
+}
+.tot div{flex:1}
+.tot .k{font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:#8d99a8}
+.tot .v{font-size:26px; font-weight:700; margin-top:3px; font-variant-numeric:tabular-nums; letter-spacing:-1px}
+
+.out{
+  background:#fff; border:1px solid var(--line); border-radius:10px; padding:13px; margin-top:11px;
+}
+.out textarea{
+  width:100%; min-height:190px; border:1px solid var(--line); border-radius:7px; padding:10px;
+  font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; color:var(--ink);
+  background:#fbfcfd; resize:vertical;
+}
+.btns{display:flex; gap:8px; margin-top:10px}
+.btns button{
+  flex:1; padding:14px 10px; border-radius:8px; border:1px solid var(--ink);
+  background:var(--ink); color:#fff; font-size:15px; font-weight:600; font-family:inherit; cursor:pointer;
+}
+.btns button.alt{background:#fff; color:var(--ink)}
+.btns button:active{opacity:.75}
+.btns button:disabled{opacity:.55; cursor:default}
+.hint{font-size:12px; color:#7b8695; margin-top:9px; line-height:1.5}
+.hint b{color:var(--amber)}
+.subStatus{font-size:13px; font-weight:600; margin-top:10px; min-height:18px}
+.subStatus.ok{color:var(--green)}
+.subStatus.wait{color:var(--amber)}
+.subStatus.err{color:var(--red)}
+
+/* ---------- print: paper carry sheet ---------- */
+.paper{display:none}
+@media print{
+  @page{size:letter portrait; margin:.4in}
+  /* The screen tool is a phone form; paper gets its own layout. Hide the screen entirely. */
+  body{background:#fff; font-size:10pt; padding:0}
+  header, .wrap{display:none !important}
+  .paper{display:block}
+
+  .phdr{display:flex; justify-content:space-between; align-items:flex-end;
+        border-bottom:2.5px solid #000; padding-bottom:6px; margin-bottom:10px}
+  .ptitle{font-size:16pt; font-weight:700; letter-spacing:-.3px}
+  .psub{font-size:8.5pt; color:#333; max-width:4.6in; margin-top:2px; line-height:1.35}
+  .pmeta{text-align:right; font-size:9pt}
+  .pmeta div{margin-bottom:5px; white-space:nowrap}
+  .pmeta u{display:inline-block; width:1.5in; border-bottom:1px solid #000; text-decoration:none}
+
+  .ptab{width:100%; border-collapse:collapse; margin-bottom:4px}
+  .ptab th{font-size:7.5pt; text-transform:uppercase; letter-spacing:.07em; color:#000;
+           border-bottom:1.5px solid #000; padding:0 5px 3px; text-align:center; font-weight:700}
+  .ptab th.l{text-align:left}
+  .ptab td{border-bottom:1px solid #bbb; padding:6px 5px; vertical-align:middle;
+           break-inside:avoid; page-break-inside:avoid}
+  .ptab td.l{width:2.5in}
+  .ptab td.l b{font-size:13pt; letter-spacing:-.3px}
+  .pd2{font-size:8.5pt; color:#000}
+  .pd3{font-size:7.5pt; color:#555}
+  .ptab td.c{text-align:center; white-space:nowrap}
+  .ptab td.n{text-align:center; width:.72in}
+
+  /* one tick box per container owned - walk and tick, no mental arithmetic */
+  .tk{display:inline-block; width:.2in; height:.2in; border:1.2px solid #000;
+      border-radius:2px; margin:0 2px}
+  .wb{display:inline-block; width:.55in; height:.32in; border:2px solid #000; border-radius:3px}
+
+  .psec{font-size:8.5pt; font-weight:700; margin:10px 0 4px; padding-top:6px;
+        border-top:1.5px solid #000}
+  .pal2 td{border-bottom:1px solid #bbb}
+  .pal2 td.ch{font-size:8.5pt; text-align:center; padding:6px 4px}
+  .ci{display:inline-block; border:1.2px solid #000; border-radius:14px;
+      padding:4px 9px; margin:0 3px; font-size:9pt; font-weight:600}
+
+  .pfoot{font-size:8pt; color:#222; line-height:1.5; margin-top:10px;
+         border-top:1.5px solid #000; padding-top:6px}
+  .sig{margin-top:7px; font-size:8pt}
+  .sig u{display:block; border-bottom:1px solid #000; text-decoration:none; height:.26in}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="inner">
+    <h1>Bandit rack count &mdash; Remus</h1>
+    <p>Alma Tire Service &middot; count the empty racks, part by part</p>
+    <div class="meta">
+      <label><span>Date</span><input type="text" id="mDate" placeholder="mm/dd/yy"></label>
+      <label><span>Driver</span><input type="text" id="mDriver" placeholder="name"></label>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="pending" id="pending"></div>
+
+  <div class="how">
+    <b>Racks &mdash; an empty rack <i>is</i> the order.</b> A rack holds one part number only, so count
+    <b>empties per part</b> &mdash; never loose pieces, never a total. Also note the full racks still
+    standing so the shop can see the cover. If a rack is partly used it is <b>not</b> empty; leave it.<br><br>
+    <b>Pallets &mdash; one pallet each, flagged in machines.</b> There is only one, so don't count pieces,
+    judge machines: these go two or four to a machine, so ask <i>how many machines are left on this pallet.</i>
+    At the flag level or under, a full pallet comes on the next run and the old one goes home the same
+    visit. <b>Don't wait for it to be nearly out</b> &mdash; one machine's worth of warning is too late.
+  </div>
+
+  <div class="alarm" id="alarm" style="display:none"></div>
+
+  <div id="parts"></div>
+
+  <h2 class="sec">Rack check</h2>
+  <div class="checkbox">
+    <div id="check"></div>
+    <p class="hint" id="checkNote" style="margin-top:8px"></p>
+  </div>
+
+  <h2 class="sec">This run</h2>
+  <div class="tot">
+    <div><div class="k">Containers to load</div><div class="v" id="tE">0</div></div>
+    <div><div class="k">Pieces to load</div><div class="v" id="tP">0</div></div>
+    <div><div class="k">Full racks standing</div><div class="v" id="tF">0</div></div>
+  </div>
+
+  <h2 class="sec">Send it in</h2>
+  <div class="out">
+    <textarea id="txt" readonly></textarea>
+    <div class="btns">
+      <button id="bSubmit">Submit count</button>
+      <button class="alt" id="bPrint">Print backup sheet</button>
+    </div>
+    <p class="subStatus" id="subStatus"></p>
+    <p class="hint">
+      Hit <b>Submit</b> any time. With signal it sends right away; without signal it's saved right here on
+      the phone and sends itself the next time you have bars &mdash; you can close the app either way, nothing
+      is lost. Print gives you a separate <b>hand-count form</b> to keep in the truck as backup &mdash; tick a
+      box per rack as you walk the row and write the total.
+    </p>
+  </div>
+
+</div>
+
+<!-- ============ PAPER HAND-COUNT FORM (print only) ============
+     Not a printout of the screen. Tick one box per container as you walk the row, then
+     write the total in the heavy box. No arithmetic in the yard. -->
+<div class="paper" id="paper"></div>
+
+<script>
+/* ---- program parts. per = pieces per container. -------------------------- */
+/* a = the Alma/supplier number the shop actually pulls by (from the SAP tracker).
+   n = containers Bandit owns, used to reconcile the fleet — a rack quietly going missing
+   is a real failure mode and nothing else in the program would catch it. */
+var PARTS = [
+  {p:'900-5921-57', s:'10025007', a:'34934',   d:'ST235/80R16 10ply on 8-bolt white MOD',   per:16, kind:'rack', n:9},
+  {p:'900-5904-76', s:'10001537', a:'35968',   d:'235/75R17.5 on HD',                       per:16, kind:'rack', n:5},
+  {p:'900-5908-39', s:'10001542', a:'35967',   d:'215/75R17.5 wheel & tire on HD',          per:16, kind:'rack', n:2},
+  {p:'900-5908-81', s:'10007945', a:'WHL165',  d:'235/75R17.5 16ply on alum single mount',  per:16, kind:'rack', n:2},
+  {p:'900-5913-94', s:'10007955', a:'34951',   d:'ST235/80R16 10ply on 16x6 alum 8-bolt',   per:16, kind:'rack', n:2},
+  {p:'900-5905-90', s:'10010926', a:'3H480',   d:'20.5x8-10 solid on white rim',            per:24, kind:'pallet', bat:2, trg:12, n:1},
+  {p:'900-5904-64', s:'10011389', a:'34979',   d:'ST235/80R16 on 8-bolt dual steel',        per:16, kind:'pallet', bat:4, trg:8,  n:1}
+];
+
+/* racks: e = empty count, f = full standing.
+   pallets: one container, so it is a state — 0 above the flag / 1 at or under it / 2 out.
+   These parts leave in whole machines, so the driver judges it in machines, not pieces. */
+var ST = PARTS.map(function(){ return {e:0, f:0, st:0}; });
+var PSTATE = ['Above the flag', 'At the flag', 'Ran out'];
+
+/* Where completed counts are sent. Filled in once the intake workflow exists. */
+var SUBMIT_URL = 'https://almatire.app.n8n.cloud/webhook/bandit-rack-count';
+var QUEUE_KEY  = 'bandit_rack_count_pending_v1';
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+function pad(s,n){ s=String(s); while(s.length<n) s+=' '; return s; }
+
+function build(){
+  var h = '';
+  PARTS.forEach(function(x,i){
+    var pal = x.kind === 'pallet';
+    var unit = pal ? 'pallet' : 'rack';
+    h += '<div class="part'+(pal?' pal':'')+'">'
+      +   '<div class="phead">'
+      +     '<div class="pn">'+esc(x.a)+' <span class="alt">'+esc(x.p)+'</span></div>'
+      +     '<div class="pd">'+esc(x.d)+'</div>'
+      +     '<div class="psap">Alma '+esc(x.a)+' &middot; Bandit '+esc(x.p)+' &middot; SAP '+esc(x.s)+'</div>'
+      +     '<span class="pfill">'+x.per+' per '+unit
+      +       (pal ? ' &middot; ' + (x.per/x.bat) + ' machines &middot; ' + x.bat + ' per machine' : '')+'</span>'
+      +   '</div>'
+      +   '<div class="rows">'
+      +     (pal ? seg(i,x)
+                 : row(i,'e','Empty racks','ready to go home &mdash; this is the order')
+                   + row(i,'f','Full racks standing','untouched or partly used, staying put'))
+      +   '</div>'
+      +   '<div class="calc zero" id="c'+i+'"><span>Load next run</span><b>nothing</b></div>'
+      + '</div>';
+  });
+  document.getElementById('parts').innerHTML = h;
+}
+
+/* pallets: one container, so it is a state not a count. Half gone is the order. */
+function seg(i,x){
+  var m = x.trg / x.bat;
+  var h = '<div class="row seg"><div class="rlab">The pallet'
+        + '<em>flag it at <b>' + m + ' machine' + (m===1?'':'s') + ' left</b> &mdash; ' + x.trg
+        + ' pieces or fewer</em></div></div>'
+        + '<div class="segbtns" data-seg="'+i+'">';
+  PSTATE.forEach(function(lab,k){
+    h += '<button type="button" data-si="'+i+'" data-sv="'+k+'" class="sg'+(k===0?' on':'')+'">'
+      +  esc(lab)+'</button>';
+  });
+  return h + '</div>';
+}
+
+function row(i,k,lab,sub){
+  return '<div class="row">'
+    +  '<div class="rlab">'+lab+'<em>'+sub+'</em></div>'
+    +  '<div class="step">'
+    +    '<button class="minus" data-i="'+i+'" data-k="'+k+'" data-d="-1" type="button">&minus;</button>'
+    +    '<input type="number" inputmode="numeric" min="0" max="99" value="0" id="f'+i+k+'" data-i="'+i+'" data-k="'+k+'">'
+    +    '<button class="plus" data-i="'+i+'" data-k="'+k+'" data-d="1" type="button">+</button>'
+    +  '</div>'
+    + '</div>';
+}
+
+function render(){
+  var tE=0, tP=0, tF=0;
+  PARTS.forEach(function(x,i){
+    var n = x.kind === 'pallet' ? (ST[i].st > 0 ? 1 : 0) : ST[i].e;
+    var pc = n * x.per;
+    tE += n; tP += pc; tF += ST[i].f;
+    var c = document.getElementById('c'+i);
+    var urgent = x.kind === 'pallet' && ST[i].st === 2;
+    c.className = 'calc' + (pc ? (urgent ? ' urg' : '') : ' zero');
+    c.innerHTML = '<span>Load next run</span><b>'
+      + (pc ? (x.kind === 'pallet' ? '1 pallet — ' : '') + pc + ' pieces'
+              + (urgent ? ' (ran out)' : '')
+            : 'nothing') + '</b>';
+  });
+  document.getElementById('tE').textContent = tE;
+  document.getElementById('tP').textContent = tP;
+  document.getElementById('tF').textContent = tF;
+
+  /* ran-out banner */
+  var out = [];
+  PARTS.forEach(function(x,i){ if(x.kind === 'pallet' && ST[i].st === 2) out.push(x.a); });
+  var ob = document.getElementById('alarm');
+  ob.style.display = out.length ? 'block' : 'none';
+  ob.innerHTML = out.length
+    ? '<b>Ran out: ' + out.join(', ') + '.</b> The line is already down on '
+      + (out.length === 1 ? 'this' : 'these') + '. Call it in now — don’t wait for the next run.'
+    : '';
+
+  /* rack check — catches a rack going missing, which nothing else would */
+  var rows = '', bad = false;
+  PARTS.forEach(function(x,i){
+    if(x.kind === 'pallet') return;
+    var seen = ST[i].e + ST[i].f, gap = x.n - seen;
+    var note = seen > x.n ? 'more than we own' : (gap > 1 ? gap + ' unaccounted' : 'ok');
+    if(note !== 'ok') bad = true;
+    rows += '<div class="ck'+(note === 'ok' ? '' : ' off')+'"><span>'+esc(x.a)+'</span>'
+         +  '<b>'+seen+' of '+x.n+'</b><i>'+note+'</i></div>';
+  });
+  document.getElementById('check').innerHTML = rows;
+  document.getElementById('checkNote').textContent = bad
+    ? 'One rack per part sitting at Alma being filled is normal. More than one means a rack is unaccounted for — say so before it becomes a habit.'
+    : 'Every rack accounted for, allowing one per part at Alma being filled.';
+
+  document.getElementById('txt').value = summary(tE,tP,tF);
+}
+
+function summary(tE,tP,tF){
+  var d = document.getElementById('mDate').value.trim();
+  var v = document.getElementById('mDriver').value.trim();
+  var L = [];
+  L.push('BANDIT RACK COUNT - REMUS  ' + (d || '__________'));
+  L.push('Counted by: ' + (v || '__________'));
+
+  /* A pallet at zero means the line is already stopped. It goes first, on its own. */
+  var out = PARTS.filter(function(x,i){ return x.kind === 'pallet' && ST[i].st === 2; });
+  if(out.length){
+    L.push('');
+    L.push('*** RAN OUT - LINE IS ALREADY DOWN ON THESE ***');
+    out.forEach(function(x){
+      var i = PARTS.indexOf(x);
+      L.push('  ' + pad(x.a,9) + pad(x.p,13) + x.d);
+    });
+    L.push('  Send today if there is any way to. Do not wait for the next run.');
+  }
+
+  L.push('');
+  L.push('LOAD NEXT RUN            Alma #    pieces   what it is');
+  var any = false;
+  PARTS.forEach(function(x,i){
+    var n = x.kind === 'pallet' ? (ST[i].st > 0 ? 1 : 0) : ST[i].e;
+    if(n <= 0) return;
+    any = true;
+    var unit = x.kind === 'pallet' ? 'pallet' : 'rack';
+    L.push('  ' + pad(n + ' ' + unit + (n===1?'':'s'), 12) + pad(x.a,10)
+           + pad(n * x.per,9) + x.d);
+    L.push('  ' + pad('',12) + '(' + x.p + ' / SAP ' + x.s + ')'
+           + (x.kind === 'pallet' ? '   [' + PSTATE[ST[i].st].toUpperCase() + ']' : ''));
+  });
+  if(!any) L.push('  nothing - no empty racks, no pallet at its flag level');
+
+  L.push('');
+  L.push('STILL STANDING FULL AT BANDIT:');
+  var anyF = false;
+  PARTS.forEach(function(x,i){
+    if(x.kind === 'pallet' || ST[i].f <= 0) return;
+    anyF = true;
+    L.push('  ' + pad(x.a,9) + pad(x.p,13) + ST[i].f + ' rack' + (ST[i].f===1?'':'s'));
+  });
+  if(!anyF) L.push('  none reported');
+
+  /* Fleet reconciliation - the only check that catches a rack going missing. */
+  L.push('');
+  L.push('RACK CHECK (seen at plant vs owned):');
+  var miss = [];
+  PARTS.forEach(function(x,i){
+    if(x.kind === 'pallet') return;
+    var seen = ST[i].e + ST[i].f;
+    var flag = seen > x.n ? '  ** MORE THAN WE OWN **'
+             : (x.n - seen > 1 ? '  ** ' + (x.n - seen) + ' unaccounted **' : '');
+    if(flag) miss.push(x.a);
+    L.push('  ' + pad(x.a,9) + seen + ' of ' + x.n + flag);
+  });
+  L.push('  One rack per part at Alma being filled is normal. More than one is not.');
+
+  L.push('');
+  L.push('TOTAL: ' + tE + ' container' + (tE===1?'':'s') + ' to load = ' + tP + ' pieces. '
+         + tF + ' full racks standing.');
+  L.push('Kitted fasteners/caps ship with their parent wheel - not counted.');
+  return L.join('\n');
+}
+
+/* ---- build the structured record sent to the office ----------------------
+   Mirrors the same numbers already shown on screen (render()/summary()) so the
+   emailed/logged record can never disagree with what the driver saw. */
+function buildPayload(){
+  var d = document.getElementById('mDate').value.trim();
+  var v = document.getElementById('mDriver').value.trim();
+
+  var parts = [], pallets = [], ranOut = [], rackCheck = [];
+  var tE = 0, tP = 0, tF = 0, anyLoad = false;
+
+  PARTS.forEach(function(x, i){
+    if(x.kind === 'pallet'){
+      var ordering = ST[i].st > 0 ? 1 : 0;
+      var pieces = ordering * x.per;
+      tE += ordering; tP += pieces;
+      if(pieces > 0) anyLoad = true;
+      if(ST[i].st === 2) ranOut.push(x.a);
+      pallets.push({
+        alma: x.a, bandit: x.p, sap: x.s, description: x.d,
+        perPallet: x.per, perMachine: x.bat,
+        state: ['above_flag','at_flag','ran_out'][ST[i].st],
+        stateLabel: PSTATE[ST[i].st],
+        piecesToLoad: pieces
+      });
+    } else {
+      var empty = ST[i].e, full = ST[i].f;
+      var pieces = empty * x.per;
+      tE += empty; tP += pieces; tF += full;
+      if(pieces > 0) anyLoad = true;
+      var seen = empty + full, gap = x.n - seen;
+      var flag = seen > x.n ? 'more_than_owned' : (gap > 1 ? 'unaccounted' : '');
+      rackCheck.push({
+        alma: x.a, seen: seen, owned: x.n,
+        flag: flag, unaccounted: flag === 'unaccounted' ? gap : 0
+      });
+      parts.push({
+        alma: x.a, bandit: x.p, sap: x.s, description: x.d,
+        perRack: x.per, owned: x.n,
+        emptyRacks: empty, fullRacksStanding: full, piecesToLoad: pieces
+      });
+    }
+  });
+
+  return {
+    submittedAt: new Date().toISOString(),
+    date: d, driver: v, plant: 'Bandit — Remus',
+    parts: parts, pallets: pallets,
+    totals: { containersToLoad: tE, piecesToLoad: tP, fullRacksStanding: tF },
+    ranOut: ranOut, rackCheck: rackCheck,
+    nothingToLoad: !anyLoad,
+    summaryText: summary(tE, tP, tF)
+  };
+}
+
+/* ---- offline queue --------------------------------------------------------
+   A submit that fails (no signal) is saved on the phone and retried the next
+   time this page is opened online, or the moment the phone gets signal back
+   while the page is still open. Nothing typed is ever lost either way. */
+function getQueue(){
+  try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch(e){ return []; }
+}
+function setQueue(q){
+  try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); } catch(e){}
+}
+function renderPending(){
+  var q = getQueue();
+  var el = document.getElementById('pending');
+  if(!q.length){ el.style.display = 'none'; el.innerHTML=''; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<b>' + q.length + ' count' + (q.length===1?'':'s') + ' waiting to send.</b> '
+    + 'Saved on this phone — will go out automatically once you have signal.';
+}
+
+function postPayload(payload){
+  var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var t = ctrl ? setTimeout(function(){ ctrl.abort(); }, 15000) : null;
+  return fetch(SUBMIT_URL, {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(payload),
+    signal: ctrl ? ctrl.signal : undefined
+  }).then(function(resp){
+    if(t) clearTimeout(t);
+    return resp.ok;
+  }).catch(function(){
+    if(t) clearTimeout(t);
+    return false;
+  });
+}
+
+function flushQueue(){
+  var q = getQueue();
+  if(!q.length) return Promise.resolve();
+  var remaining = q.slice();
+  function next(){
+    if(!remaining.length){ setQueue([]); renderPending(); return Promise.resolve(); }
+    var item = remaining[0];
+    return postPayload(item).then(function(ok){
+      if(!ok) { setQueue(remaining); renderPending(); return; }
+      remaining.shift();
+      return next();
+    });
+  }
+  return next();
+}
+
+function setStatus(text, kind){
+  var el = document.getElementById('subStatus');
+  el.textContent = text;
+  el.className = 'subStatus' + (kind ? ' ' + kind : '');
+}
+
+/* ---- events ---- */
+document.addEventListener('click', function(ev){
+  var s = ev.target.closest ? ev.target.closest('button[data-sv]') : null;
+  if(s){
+    var si = +s.getAttribute('data-si'), sv = +s.getAttribute('data-sv');
+    ST[si].st = sv;
+    var grp = document.querySelector('[data-seg="'+si+'"]');
+    Array.prototype.forEach.call(grp.querySelectorAll('button'), function(b2,k){
+      b2.className = 'sg' + (k === sv ? ' on' + (sv === 2 ? ' red' : sv === 1 ? ' amb' : '') : '');
+    });
+    render();
+    return;
+  }
+  var b = ev.target.closest ? ev.target.closest('button[data-d]') : null;
+  if(!b) return;
+  var i = +b.getAttribute('data-i'), k = b.getAttribute('data-k'), d = +b.getAttribute('data-d');
+  var n = ST[i][k] + d;
+  if(n < 0) n = 0; if(n > 99) n = 99;
+  ST[i][k] = n;
+  document.getElementById('f'+i+k).value = n;
+  render();
+});
+
+document.addEventListener('input', function(ev){
+  var t = ev.target;
+  if(t.id === 'mDate' || t.id === 'mDriver'){ render(); return; }
+  if(t.tagName !== 'INPUT' || t.getAttribute('data-k') === null) return;
+  var i = +t.getAttribute('data-i'), k = t.getAttribute('data-k');
+  var n = parseInt(t.value, 10);
+  if(isNaN(n) || n < 0) n = 0; if(n > 99) n = 99;
+  ST[i][k] = n;
+  render();
+});
+
+document.addEventListener('focusin', function(ev){
+  if(ev.target.tagName === 'INPUT' && ev.target.getAttribute('data-k') !== null) ev.target.select();
+});
+
+document.getElementById('bPrint').addEventListener('click', function(){ window.print(); });
+
+document.getElementById('bSubmit').addEventListener('click', function(){
+  var btn = this;
+  var payload = buildPayload();
+  btn.disabled = true;
+  setStatus('Submitting…', 'wait');
+  postPayload(payload).then(function(ok){
+    btn.disabled = false;
+    if(ok){
+      setStatus('Sent — thanks, this count is in.', 'ok');
+      flushQueue();
+    } else {
+      var q = getQueue();
+      q.push(payload);
+      setQueue(q);
+      renderPending();
+      setStatus('No signal — saved on this phone, will send automatically.', 'wait');
+    }
+  });
+});
+
+window.addEventListener('online', function(){ flushQueue(); });
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+
+/* ---- paper hand-count form ----------------------------------------------
+   Deliberately not the screen. One tick box per container owned, so counting is
+   walk-and-tick rather than remember-and-add, then the total goes in the heavy box.
+   Pieces per container are pre-printed so nobody multiplies in the yard. */
+function boxes(n){
+  var s = '';
+  for(var k = 0; k < n; k++) s += '<span class="tk"></span>';
+  return s;
+}
+
+function buildPaper(){
+  var h = '<div class="phdr">'
+        + '<div><div class="ptitle">Bandit rack count &mdash; Remus</div>'
+        +   '<div class="psub">Alma Tire Service &middot; tick one box per container as you walk the row, '
+        +   'then write the total. Do not count pieces.</div></div>'
+        + '<div class="pmeta"><div>Date <u></u></div><div>Counted by <u></u></div></div>'
+        + '</div>';
+
+  h += '<table class="ptab"><thead><tr>'
+    +  '<th class="l">Part</th><th class="c">Empty &mdash; this is the order</th>'
+    +  '<th class="n">Empty<br>total</th><th class="c">Full, staying put</th>'
+    +  '<th class="n">Full<br>total</th></tr></thead><tbody>';
+
+  PARTS.forEach(function(x){
+    var pal = x.kind === 'pallet';
+    if(pal) return;
+    h += '<tr>'
+      +  '<td class="l"><b>'+esc(x.a)+'</b><br><span class="pd2">'+esc(x.d)+'</span>'
+      +    '<br><span class="pd3">'+esc(x.p)+' &middot; 1 rack = '+x.per+' pcs &middot; owns '+x.n+'</span></td>'
+      +  '<td class="c">'+boxes(x.n)+'</td><td class="n"><span class="wb"></span></td>'
+      +  '<td class="c">'+boxes(x.n)+'</td><td class="n"><span class="wb"></span></td>'
+      +  '</tr>';
+  });
+  h += '</tbody></table>';
+
+  h += '<div class="psec">Pallets &mdash; one each. Do not count pieces, judge machines. Circle one.</div>';
+  h += '<table class="ptab pal2"><tbody>';
+  PARTS.forEach(function(x){
+    if(x.kind !== 'pallet') return;
+    var m = x.trg / x.bat;
+    h += '<tr><td class="l"><b>'+esc(x.a)+'</b><br><span class="pd2">'+esc(x.d)+'</span>'
+      +  '<br><span class="pd3">'+esc(x.p)+' &middot; '+x.bat+' per machine &middot; pallet = '
+      +  (x.per/x.bat)+' machines ('+x.per+' pcs)</span></td>'
+      +  '<td class="ch"><b>Flag at '+m+' machine'+(m===1?'':'s')+' left</b> ('+x.trg+' pcs or fewer)</td>'
+      +  '<td class="ch"><span class="ci">Above the flag</span><span class="ci">AT THE FLAG</span>'
+      +  '<span class="ci">RAN OUT</span></td></tr>';
+  });
+  h += '</tbody></table>';
+
+  h += '<div class="pfoot">'
+    +  '<b>Rack check.</b> Empty + full should equal what Bandit owns, less at most one rack per part '
+    +  'sitting at Alma being filled. If a part is short by more than one, circle it and say so.'
+    +  '<br><b>Never counted:</b> fasteners, caps and swivel nuts &mdash; they ship with their parent wheel.'
+    +  '<br><b>Back to:</b> Matt C, Alma Tire Service &middot; matt@almatire.com &middot; 989.205.7037'
+    +  '<div class="sig">Notes / anything odd in the yard <u></u><u></u></div>'
+    +  '</div>';
+
+  document.getElementById('paper').innerHTML = h;
+}
+
+/* ---- init ---- */
+(function(){
+  var t = new Date();
+  document.getElementById('mDate').value =
+    (t.getMonth()+1) + '/' + t.getDate() + '/' + String(t.getFullYear()).slice(2);
+  build();
+  buildPaper();
+  render();
+  renderPending();
+  flushQueue();
+})();
+</script>
+</body>
+</html>
