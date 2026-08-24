@@ -1,0 +1,15 @@
+{
+  "name": "Bandit Rack Count — Remus",
+  "short_name": "Rack Count",
+  "description": "Alma Tire Service rack count and reorder form for Bandit's Remus plant.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f6f9",
+  "theme_color": "#12161c",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
