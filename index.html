@@ -228,10 +228,17 @@ h2.sec{
   <div class="pending" id="pending"></div>
 
   <div class="how">
+    <!-- Reworded 8/28. Step 2 said "Count FULL racks standing" and that phrase is banned
+         everywhere now: a rack part-picked over still counts as one, and "FULL" reads as a
+         piece test, so a new driver walks past a half-drawn rack and under-orders. Step 3 is
+         new and is the one thing the count needs from Bandit's people (see the rule block in
+         the script header) — an empty left in the rack row makes the 5.5 pile come up short
+         and fires a false lost-rack alarm, and it also misses its trip home. -->
     <p><b>1.</b> Unload first. Today&rsquo;s drop counts as standing.</p>
-    <p><b>2.</b> Count FULL racks standing, part by part. Part used still counts.</p>
-    <p><b>3.</b> Count empty racks in Bldg 5.5 &mdash; total only.</p>
-    <p><b>4.</b> Pallets: count the pieces left on the floor.</p>
+    <p><b>2.</b> Count the racks still holding wheels, part by part. Part used still counts as one.</p>
+    <p><b>3.</b> Empty rack still in the row? Walk it to Bldg 5.5 now. Do not count it.</p>
+    <p><b>4.</b> Count the empty racks in Bldg 5.5 &mdash; total only.</p>
+    <p><b>5.</b> Pallets: count the pieces left on the floor.</p>
   </div>
 
   <div id="parts"></div>
@@ -259,7 +266,7 @@ h2.sec{
   <div class="tot">
     <div><div class="k">Containers to load</div><div class="v" id="tE">0</div></div>
     <div><div class="k">Pieces to load</div><div class="v" id="tP">0</div></div>
-    <div><div class="k">Full racks standing</div><div class="v" id="tF">0</div></div>
+    <div><div class="k">Racks standing</div><div class="v" id="tF">0</div></div>
   </div>
 
   <div class="alarm" id="alarm" style="display:none"></div>
@@ -300,12 +307,29 @@ h2.sec{
 
    The order is now derived instead of observed:
 
-       racks to load (part i) = racks Bandit owns (part i) - full racks standing (part i)
+       racks to load (part i) = racks Bandit owns (part i) - racks standing (part i)
 
    Alma holds no racks between runs — anything brought back empty goes back full —
-   so at the moment of the count every rack that is not standing full at VMI is an
-   empty rack sitting in 5.5. The arithmetic is exact and needs no memory of the
-   previous visit.
+   so at the moment of the count every rack that is not standing at VMI is an empty
+   rack sitting in 5.5. The arithmetic is exact and needs no memory of the previous
+   visit.
+
+   WHAT "STANDING" MEANS, and the wording was wrong here until 8/28: a rack standing
+   in the VMI area COUNTS whether it is full or half picked over. Matt, twice: "half
+   empty standing is considered full. if it's not empty and at 5.5, it's considered
+   full." Only a rack that has gone empty to 5.5 is excluded. Nothing in this file
+   decides that — the driver does, off a stepper — so the phrase "full racks
+   standing" was pure wording, and it was wrong wording: it reads as a piece test and
+   it misled the design analysis for two exchanges. Do not reintroduce it. The payload
+   key `fullRacksStanding` is deliberately NOT renamed — n8n is keyed to it and the
+   rename buys nothing.
+
+   ⚠ THE ONE THING THIS NEEDS FROM BANDIT'S PEOPLE: empties must go out to 5.5
+   promptly. The order math is indifferent (an empty left in the row holds no wheels,
+   so it is not standing, so it still gets ordered) but the AUDIT is not — the 5.5
+   pile comes up short and fires a false lost-rack alarm, the same signature as
+   counting before unloading. And the driver collects from 5.5, so a rack left in the
+   row does not go home and does not come back full. Hence step 3 on the card.
 
    ORDER OF OPERATIONS IS PART OF THE MATH, NOT A NICETY. The delivery must be set
    down BEFORE the count, and today's drop must be counted as standing. Count first
@@ -344,7 +368,9 @@ var PARTS = [
   {p:'900-5904-64', s:'10011389', a:'34979',   d:'ST235/80R16 on 8-bolt dual steel',        per:16, kind:'pallet', bat:4, trg:8,  n:1}
 ];
 
-/* racks:   f   = full racks standing at VMI. (v1's `e` — empties per part — is gone.)
+/* racks:   f   = racks standing at VMI, full OR part picked over. (v1's `e` — empties
+                  per part — is gone.) Named `f` for "full" in v1 and kept for continuity;
+                  the name is a leftover, not a piece test. See the rule block above.
    pallets: pcs = pieces of that part left on the floor, ALL pallets together, today's
                   delivery included.
 
@@ -470,7 +496,7 @@ function build(){
       +   '</div>'
       +   '<div class="rows">'
       +     (pal ? row(i,'pcs','Pieces left on the floor','<b>today&rsquo;s delivery included</b> &middot; count them all')
-                 : row(i,'f','Full racks standing','<b>today&rsquo;s delivery included</b> &middot; part used still counts'))
+                 : row(i,'f','Racks standing','<b>today&rsquo;s delivery included</b> &middot; part used still counts as one'))
       +   '</div>'
       +   '<div class="calc zero" id="c'+i+'"></div>'
       + '</div>';
@@ -609,10 +635,10 @@ function summary(tE,tP,tF,expected){
              + ' (' + c.bandit + ', ' + c.perWheel + '/wheel)');
     });
   });
-  if(!any) L.push('  nothing - every rack standing full, no pallet at its flag level');
+  if(!any) L.push('  nothing - every rack still standing, no pallet at its flag level');
 
   L.push('');
-  L.push('STILL STANDING FULL AT BANDIT:');
+  L.push('STILL STANDING AT BANDIT:');
   var anyF = false;
   PARTS.forEach(function(x,i){
     if(x.kind === 'pallet' || ST[i].f === null || ST[i].f <= 0) return;
@@ -653,7 +679,7 @@ function summary(tE,tP,tF,expected){
 
   L.push('');
   L.push('TOTAL: ' + tE + ' container' + (tE===1?'':'s') + ' to load = ' + tP + ' pieces. '
-         + tF + ' full racks standing.');
+         + tF + ' racks standing.');
   L.push('Kitted fasteners/caps ship with their parent wheel - not counted.');
   return L.join('\n');
 }
@@ -911,13 +937,14 @@ function buildPaper(){
   var h = '<div class="phdr">'
         + '<div><div class="ptitle">Bandit rack count &mdash; Remus</div>'
         +   '<div class="psub">Alma Tire Service &middot; <b>unload today&rsquo;s delivery first</b>, then tick '
-        +   'one box per FULL rack standing as you walk the row &mdash; today&rsquo;s drop included. '
-        +   'Write the total. Do not count pieces.</div></div>'
+        +   'one box per rack still holding wheels as you walk the row &mdash; today&rsquo;s drop included, '
+        +   'and a rack part used still counts as one. Write the total. Do not count pieces. '
+        +   '<b>An empty rack still in the row goes to Bldg 5.5 now &mdash; do not tick it.</b></div></div>'
         + '<div class="pmeta"><div>Date <u></u></div><div>Counted by <u></u></div></div>'
         + '</div>';
 
   h += '<table class="ptab"><thead><tr>'
-    +  '<th class="l">Part</th><th class="c">Full racks standing &mdash; tick one box each</th>'
+    +  '<th class="l">Part</th><th class="c">Racks standing &mdash; tick one box each</th>'
     +  '<th class="n">Total<br>standing</th></tr></thead><tbody>';
 
   PARTS.forEach(function(x){
