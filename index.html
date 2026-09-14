@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
-<title>Bandit rack count — Remus</title>
+<title>Bandit rack count</title>
 <style>
 :root{
   --ink:#12161c; --ink2:#48525f; --line:#d2d8e0; --bg:#f4f6f9; --card:#fff;
@@ -29,11 +29,68 @@ body{
 }
 .wrap{max-width:640px; margin:0 auto; padding:0 12px}
 
+/* ---------- location picker (first screen) ----------
+   Two counts happen on one morning, fifteen minutes apart, on a phone in a truck.
+   The single most expensive mistake available in this app is keying one plant's
+   numbers into the other plant's count and submitting it. The picker, the header
+   colour band and the sticky strip all exist for that one reason. */
+.pick{max-width:640px; margin:0 auto; padding:26px 14px 40px}
+.pick h1{font-size:25px; margin:0 0 6px; letter-spacing:-.3px}
+.pick .lede{font-size:16px; color:var(--ink2); margin:0 0 22px; line-height:1.45}
+.lbtn{
+  display:block; width:100%; text-align:left; background:var(--card);
+  border:1.5px solid var(--line); border-radius:12px; padding:17px 17px 15px;
+  margin-bottom:12px; font-family:inherit; color:var(--ink); cursor:pointer;
+}
+.lbtn:active{background:#eef1f5}
+.lbtn .ln{font-size:24px; font-weight:800; letter-spacing:-.3px; display:flex;
+          align-items:center; gap:9px}
+/* Both are <span>, so they were inline and ran together — "...on programnot counted
+   today" — and their margin-top did nothing. display:block is what those margins
+   always assumed. */
+.lbtn .lsub{display:block; font-size:14.5px; color:var(--ink2); margin-top:5px; line-height:1.35}
+.lbtn .lwhen{display:block; font-size:13px; margin-top:8px; font-weight:700}
+.lbtn .lwhen.done{color:var(--green)}
+.lbtn .lwhen.todo{color:var(--ink2); font-weight:400}
+.ord{font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase;
+     padding:3px 8px; border-radius:20px; background:var(--ink); color:#fff; flex:none}
+.lbtn.second .ord{background:#e3e7ec; color:#6c7887}
+.nudge{
+  background:var(--amber-bg); border:1px solid #eeddb0; border-left:5px solid var(--amber);
+  border-radius:9px; padding:12px 14px; font-size:15px; color:#4a3a00; margin:0 0 14px;
+  display:none; line-height:1.45;
+}
+
 /* ---------- header ---------- */
 header{background:var(--ink); color:#fff; padding:15px 12px 17px; margin-bottom:14px}
 header .inner{max-width:640px; margin:0 auto}
 header h1{margin:0; font-size:21px; letter-spacing:-.2px}
 header p{margin:4px 0 0; font-size:14px; color:#aeb9c7}
+header .locrow{display:flex; align-items:center; gap:10px; margin-bottom:7px}
+.locpill{
+  font-size:12.5px; font-weight:800; text-transform:uppercase; letter-spacing:.07em;
+  padding:4px 11px; border-radius:20px; color:#fff; flex:none;
+}
+/* Neutral on purpose. Blue and purple both mean a PART on the cards below, so a
+   plant badge in either colour would be a second meaning for the same colour on
+   one screen. The plant is told apart by the word, not the paint. */
+.locpill.nw{background:#3d4653}
+.locpill.main{background:#3d4653}
+.swap{
+  margin-left:auto; background:transparent; border:1px solid #4a5564; color:#cfd7e0;
+  border-radius:7px; padding:6px 11px; font-size:13.5px; font-family:inherit; cursor:pointer;
+}
+.swap:active{background:#1c222b}
+
+/* Sticky strip so the plant is on screen even when the header has scrolled away.
+   Neutral grey, not a rack colour — see the note on .locpill. */
+.stick{
+  position:sticky; top:0; z-index:20; margin:0 0 14px;
+  padding:8px 12px; font-size:13.5px; font-weight:800; color:#fff;
+  text-align:center; letter-spacing:.03em;
+}
+.stick.nw{background:#3d4653}
+.stick.main{background:#3d4653}
 .meta{display:flex; gap:9px; margin-top:13px}
 .meta label{flex:1; display:block}
 .meta span{display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.09em; color:#94a0af; margin-bottom:5px}
@@ -59,12 +116,56 @@ header p{margin:4px 0 0; font-size:14px; color:#aeb9c7}
 }
 .pending b{color:var(--amber)}
 
-/* ---------- part card ---------- */
+/* ---------- rack colours ----------
+   Bandit's own idea — rattle can on the corners of the racks — and the map encodes
+   BOTH part and plant, which is the thing that makes it worth doing:
+   900-5904-76 and 900-5908-39 look almost identical and Bandit has installed one of
+   each on the same machine, and a rack that drifts between plants reads wrong at a
+   glance before anyone parses a part number. Settled 9/2, 8 colours / 26 racks.
+
+   The two pallet parts carry NO colour — they never go on a rack. Their edge stays
+   the neutral pallet grey so an unpainted card is never mistaken for a missing one.
+
+   Values are the on-screen match to fluorescent rattle can, not the paint spec.
+   PINK IS DELIBERATELY FLUORESCENT, NOT PASTEL — a pastel fades toward orange
+   outdoors and orange is already 900-5913-94. */
 .part{
   background:var(--card); border:1px solid var(--line); border-radius:11px;
-  margin-bottom:12px; overflow:hidden;
+  margin-bottom:12px; overflow:hidden; border-left:11px solid #c8ced6;
 }
-.part.pal{border-left:5px solid var(--amber)}
+.part.pal{border-left:11px solid #b3bcc7}
+.part.c-red{border-left-color:#cc2222}
+.part.c-yellow{border-left-color:#e8b400}
+.part.c-blue{border-left-color:#1665c8}
+.part.c-green{border-left-color:#158a4a}
+.part.c-orange{border-left-color:#e26a10}
+.part.c-purple{border-left-color:#7b34c4}
+.part.c-pink{border-left-color:#e4188c}
+
+/* The colour named in words as well as shown. A stripe alone cannot be read out
+   over the phone, and "the red rack" is how this gets talked about in the yard. */
+.pcol{
+  display:inline-block; margin:9px 0 0 8px; font-size:12.5px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.05em; padding:4px 10px; border-radius:20px;
+  color:#fff;
+}
+.pcol.c-red{background:#cc2222}
+.pcol.c-yellow{background:#e8b400; color:#3a2e00}
+.pcol.c-blue{background:#1665c8}
+.pcol.c-green{background:#158a4a}
+.pcol.c-orange{background:#e26a10}
+.pcol.c-purple{background:#7b34c4}
+.pcol.c-pink{background:#e4188c}
+/* Driver instruction printed on the card, not a control. Pull-when-low is a thing
+   the driver DOES in the yard; nothing in the app records it and nothing needs to.
+   Taking the rack makes `standing` 0 on its own, so `owned - standing` already
+   orders the replacement on this run instead of waiting for the rack to run dry.
+   Matt, 2026-09-11: "leave the math alone." Do not turn this into a field. */
+.pnote{
+  margin:0 15px 13px; padding:9px 12px; border-radius:8px;
+  background:#fff4d6; border:1px solid #e8cf8a; color:#4a3a00;
+  font-size:14.5px; font-weight:700; line-height:1.35;
+}
 .phead{padding:13px 15px 11px}
 .pn{font-size:28px; font-weight:800; letter-spacing:-.5px; font-variant-numeric:tabular-nums; line-height:1.1}
 .pd{font-size:16.5px; font-weight:600; color:#2b3442; margin-top:5px; line-height:1.3}
@@ -164,7 +265,7 @@ h2.sec{
 @media print{
   @page{size:letter portrait; margin:.4in}
   body{background:#fff; font-size:10pt; padding:0}
-  header, .wrap{display:none !important}
+  header, .wrap, .pick, .stick{display:none !important}
   .paper{display:block}
 
   .phdr{display:flex; justify-content:space-between; align-items:flex-end;
@@ -194,6 +295,11 @@ h2.sec{
 
   .psec{font-size:8.5pt; font-weight:700; margin:11px 0 4px; padding-top:6px;
         border-top:1.5px solid #000}
+  /* Same driver instruction as the on-screen .pnote. The paper form is what he uses
+     when the phone is dead, which is exactly when nobody can remind him. Boxed and
+     black — there is no colour on this sheet. */
+  .pnote2{display:inline-block; margin-top:4px; padding:2px 6px; border:1.2px solid #000;
+          border-radius:3px; font-size:8.5pt; font-weight:700}
   .pal2 td{border-bottom:1px solid #bbb}
   .pal2 td.ch{font-size:8.5pt; text-align:center; padding:6px 4px}
   .ci{display:inline-block; border:1.2px solid #000; border-radius:14px;
@@ -212,9 +318,28 @@ h2.sec{
 </head>
 <body>
 
-<header>
+<!-- ============ LOCATION PICKER — first screen ============
+     North Winn is listed first and carries the "count first" badge. That is Matt's
+     standing instruction, not a sort order: "nw will always be first."
+
+     Each plant submits on its own rather than one session covering both. Main is
+     fifteen minutes from North Winn and a lot of phone activity happens in those
+     fifteen minutes — holding half a count across a drive, a call and a screen lock
+     is fragile. Each location is counted complete and sent before the truck moves.
+     The cost is two submissions a morning instead of one, and that is accepted. -->
+<div class="pick" id="pick">
+  <h1>Bandit rack count</h1>
+  <p class="lede">Which plant are you at?</p>
+  <div id="pickList"></div>
+</div>
+
+<header id="app1" style="display:none">
   <div class="inner">
-    <h1>Bandit rack count &mdash; Remus</h1>
+    <div class="locrow">
+      <span class="locpill" id="hPill"></span>
+      <button class="swap" id="bSwap" type="button">Change plant</button>
+    </div>
+    <h1 id="hTitle"></h1>
     <p>Alma Tire Service &middot; unload first, then count what&rsquo;s standing</p>
     <div class="meta">
       <label><span>Date</span><input type="text" id="mDate" placeholder="mm/dd/yy"></label>
@@ -223,7 +348,9 @@ h2.sec{
   </div>
 </header>
 
-<div class="wrap">
+<div class="stick" id="stick" style="display:none"></div>
+
+<div class="wrap" id="app2" style="display:none">
 
   <div class="pending" id="pending"></div>
 
@@ -235,19 +362,24 @@ h2.sec{
          the script header) — an empty left in the rack row makes the 5.5 pile come up short
          and fires a false lost-rack alarm, and it also misses its trip home. -->
     <p><b>1.</b> Unload first. Today&rsquo;s drop counts as standing.</p>
-    <p><b>2.</b> Count the racks still holding wheels, part by part. Part used still counts as one.</p>
-    <p><b>3.</b> Empty rack still in the row? Walk it to Bldg 5.5 now. Do not count it.</p>
-    <p><b>4.</b> Count the empty racks in Bldg 5.5 &mdash; total only.</p>
-    <p><b>5.</b> Pallets: count the pieces left on the floor.</p>
+    <p><b>2.</b> Count the <b>racks</b> still holding wheels, by part number. Partially filled still counts as one rack.</p>
+    <!-- Matt 9/11: "no one is walking a rack anywhere, they're probably 500 pounds empty."
+         The old wording said "walk it to 5.5", which describes a job nobody can do by hand
+         and made the step easy to dismiss. It also said "do not count it" — true but
+         incomplete: it is not counted as STANDING, it is counted in the 5.5 empties total
+         at step 4. Naming where it does get counted is what stops it being skipped. -->
+    <p><b>3.</b> Empty rack still in the row? Get it to <span class="sShort">Bldg 5.5</span> and count it as empty.</p>
+    <p><b>4.</b> Count the empty racks in <span class="sShort">Bldg 5.5</span> &mdash; total only.</p>
+    <p class="palOnly"><b>5.</b> Pallets: count the actual product left on the pallet.</p>
   </div>
 
   <div id="parts"></div>
 
-  <h2 class="sec">Empty racks in Building 5.5</h2>
+  <h2 class="sec">Empty racks in <span class="sLong">Building 5.5</span></h2>
   <div class="e55">
     <div class="phead">
       <div class="pn">The empty pile</div>
-      <div class="pd">Every empty rack in 5.5, all parts together. Just the total.</div>
+      <div class="pd">Every empty rack in <span class="sShort">5.5</span>, all parts together. Just the total.</div>
     </div>
     <div class="rows">
       <div class="row">
@@ -295,8 +427,18 @@ h2.sec{
 
 <script>
 /* ==========================================================================
-   BANDIT RACK COUNT — Remus
-   v2.0  (2026-08-26)
+   BANDIT RACK COUNT
+   v2.0  (2026-08-26)  — the derived-order rewrite, described below
+   v4.0  (2026-09-11)  — TWO LOCATIONS. North Winn joins Main (the Remus plant,
+                         renamed to Main this session). One app, one code path,
+                         two data sets; the driver picks a plant and counts it
+                         complete. See the LOCATIONS block below for what is
+                         Main-only and what North Winn changes.
+                         ⚠ Payload gains `location` — n8n must route on it.
+   v4.1  (2026-09-14, Brad) — Added `countRef` (VMI-NW/MAIN-YYYYMMDD), minted
+                         at submit per Matt's package §4. Not in Matt's file as
+                         delivered; added here since he confirmed building it
+                         now. See nextCountRef() near markSubmitted().
 
    WHAT CHANGED FROM v1 AND WHY
    ----------------------------
@@ -356,17 +498,111 @@ h2.sec{
    p   = Bandit's own part number — what their buyer and their MRP know it as
    n   = containers Bandit owns. LOAD-BEARING under v2, see header note.
    bat = pieces per machine (pallets only), trg = flag level in pieces (pallets only) */
-var PARTS = [
-  {p:'900-5921-57', s:'10025007', a:'34934',   d:'ST235/80R16 10ply on 8-bolt white MOD',   per:16, kind:'rack', n:8},
-  {p:'900-5904-76', s:'10001537', a:'35968',   d:'235/75R17.5 on HD',                       per:16, kind:'rack', n:5},
-  {p:'900-5908-39', s:'10001542', a:'35967',   d:'215/75R17.5 wheel & tire on HD',          per:16, kind:'rack', n:2},
-  /* Alma buys this one as two parts — tire 10305TR and wheel WHL165 — and assembles it.
-     Both numbers are shown because neither one alone identifies what Alma pulls. */
-  {p:'900-5908-81', s:'10007945', a:'10305TR/WHL165', d:'235/75R17.5 16ply on alum single mount', per:16, kind:'rack', n:2},
-  {p:'900-5913-94', s:'10007955', a:'34951',   d:'ST235/80R16 10ply on 16x6 alum 8-bolt',   per:16, kind:'rack', n:2},
-  {p:'900-5905-90', s:'10010926', a:'3H480',   d:'20.5x8-10 solid on white rim',            per:24, kind:'pallet', bat:2, trg:12, n:1},
-  {p:'900-5904-64', s:'10011389', a:'34979',   d:'ST235/80R16 on 8-bolt dual steel',        per:16, kind:'pallet', bat:4, trg:8,  n:1}
+/* ==========================================================================
+   TWO LOCATIONS — added 2026-09-11
+
+   North Winn ("Bandit South") runs the SAME program on a subset of the parts.
+   One app, one code path, two data sets. Nothing about the count mechanic,
+   the empty-swap rule or the arithmetic differs between them.
+
+   NORTH WINN IS FIRST. Always. Matt's standing instruction — it is why the
+   picker badges it rather than sorting alphabetically or by last used.
+
+   ⛔ `n` AT NORTH WINN IS 1 AND IT STAYS 1.
+   Bandit approved FOUR racks for North Winn. Only TWO are deployed — one per
+   part. The other two are held at Alma as the swap buffer and painted black.
+   `n` is load-bearing under v2: every rack this app believes Bandit owns but
+   which is not on their floor becomes a phantom order on EVERY run. Setting
+   North Winn to 2 because "four were approved" orders two phantom racks a
+   week, forever. If a held rack is ever deployed, `n` goes to 2 that day and
+   not before — same rule as 34934 and the 20th rack.
+
+   ⚠ ONE RACK PER PART ONLY WORKS WITH PULL-WHEN-LOW, WHICH THIS APP CANNOT
+   YET RECORD. A single rack that must run empty before replacement leaves the
+   floor dry for the full 3–4 day gap every time it drains. The agreed mechanic
+   is that the driver pulls the last few wheels to a marked floor spot and takes
+   the rack — but this app counts racks off a stepper and has no concept of
+   loose wheels on the floor. Scoped separately. Until it exists, the North Winn
+   audit arithmetic below is right but the coverage story behind it is not
+   complete. Do not present one-rack to Bandit as a finished design on the
+   strength of this build.
+
+   WHICH PARTS: every program part other than the two below is confirmed ZERO at
+   North Winn against MaddenCo — trailing 12, customer 1054, ship-to matched
+   across all three address lines, VOID headers excluded. Do not add a part here
+   on a hunch; re-run the pull.
+   ========================================================================== */
+var LOCATIONS = [
+  {
+    id: 'north_winn',
+    label: 'North Winn',
+    title: 'Bandit rack count — North Winn',
+    plant: 'Bandit — North Winn',
+    cls: 'nw',
+    /* Both plants are in Remus, MI — so the town distinguishes nothing and the
+       street does. Matt, 9/11: "nw is technically in remus." */
+    note: 'Walton Rd &middot; Bandit South &middot; the bigger machines',
+    shipTo: 'NW PRODUCTION',
+    /* ⚠ WORKING NAME, Matt 9/11: "undefined, call it the staging spot for now."
+       North Winn has an empty-rack area but it has no agreed name yet. Nothing
+       structural depends on this string — but it prints on the driver's paper
+       form and in the emailed load list, so it wants a real name before it goes
+       in front of anyone at Bandit. */
+    stagingLong:  'the staging spot',
+    stagingShort: 'the staging spot',
+    /* RESOLVED 9/11 — the hardware DOES ship to North Winn with the wheel.
+       Set false earlier in the same session on the reading that caps and nuts go
+       to Bandit's PARTS ship-to; Matt corrected it. That earlier reading came
+       from NW assembly totals not carrying the hardware, which is a ship-to
+       artifact in the history, not evidence about what travels with the rack.
+       ⚠ This is load-bearing for billing: under per-shipment POs, hardware that
+       is not on the PO is product shipped with nothing to invoice against. */
+    kits: true,
+    parts: [
+      /* `note` is North Winn only and exists because these two parts run ONE rack
+         each. A single rack that must go fully empty before it is replaced leaves
+         the floor dry for the whole 3-4 day gap every time it drains. Pulling the
+         last few wheels and taking the rack closes that. Main's parts have rack
+         slack and carry no note. */
+      {p:'900-5904-76', s:'10001537', a:'35968', d:'235/75R17.5 on HD', per:16, kind:'rack', n:1, c:'purple',
+        note:'If 4 or less left &mdash; remove them and take the rack.'},
+      {p:'900-5908-81', s:'10007945', a:'10305TR/WHL165', d:'235/75R17.5 16ply on alum single mount', per:16, kind:'rack', n:1, c:'pink',
+        note:'If 4 or less left &mdash; remove them and take the rack.'}
+    ]
+  },
+  {
+    /* Renamed Remus → Main, 9/11. `id` changed with the label deliberately: the
+       two-location payload has not shipped yet, so this is free now and would be
+       a breaking change later. A routing key that says 'remus' while every screen
+       says 'Main' is how a plant gets mixed up a year from now. */
+    id: 'main',
+    label: 'Main',
+    title: 'Bandit rack count — Main',
+    plant: 'Bandit — Main',
+    cls: 'main',
+    note: 'Millbrook Rd &middot; Building 5 &middot; the main plant',
+    shipTo: 'PRODUCTION 5.5',
+    stagingLong:  'Building 5.5',
+    stagingShort: 'Bldg 5.5',
+    kits: true,
+    parts: [
+      {p:'900-5921-57', s:'10025007', a:'34934',   d:'ST235/80R16 10ply on 8-bolt white MOD',   per:16, kind:'rack', n:8, c:'red'},
+      {p:'900-5904-76', s:'10001537', a:'35968',   d:'235/75R17.5 on HD',                       per:16, kind:'rack', n:5, c:'yellow'},
+      {p:'900-5908-39', s:'10001542', a:'35967',   d:'215/75R17.5 wheel & tire on HD',          per:16, kind:'rack', n:2, c:'blue'},
+      /* Alma buys this one as two parts — tire 10305TR and wheel WHL165 — and assembles it.
+         Both numbers are shown because neither one alone identifies what Alma pulls. */
+      {p:'900-5908-81', s:'10007945', a:'10305TR/WHL165', d:'235/75R17.5 16ply on alum single mount', per:16, kind:'rack', n:2, c:'green'},
+      {p:'900-5913-94', s:'10007955', a:'34951',   d:'ST235/80R16 10ply on 16x6 alum 8-bolt',   per:16, kind:'rack', n:2, c:'orange'},
+      {p:'900-5905-90', s:'10010926', a:'3H480',   d:'20.5x8-10 solid on white rim',            per:24, kind:'pallet', bat:2, trg:12, n:1},
+      {p:'900-5904-64', s:'10011389', a:'34979',   d:'ST235/80R16 on 8-bolt dual steel',        per:16, kind:'pallet', bat:4, trg:8,  n:1}
+    ]
+  }
 ];
+
+/* The selected location, and the part list it puts in play. Both are null until
+   the driver picks — nothing in the app computes before that. */
+var LOC = null;
+var PARTS = [];
 
 /* racks:   f   = racks standing at VMI, full OR part picked over. (v1's `e` — empties
                   per part — is gone.) Named `f` for "full" in v1 and kept for continuity;
@@ -384,7 +620,7 @@ var PARTS = [
    here (no racks standing / pallet ran out), so an uncounted field cannot be zero
    either. Nothing on the card computes until a number is actually entered, and Submit
    stops once to say what is still blank. */
-var ST = PARTS.map(function(){ return {f:null, pcs:null}; });
+var ST = [];
 var PSTATE = ['Above the flag', 'At the flag', 'Ran out'];
 
 /* Total empty racks counted in Building 5.5. null until counted. */
@@ -417,6 +653,10 @@ var KITS = {
 /* Hardware owed for a part, given the racks being loaded. Empty array = none owed,
    either because the part carries no hardware or because nothing is being loaded. */
 function kitsFor(x, racks){
+  /* Location gate: a plant that does not receive the hardware never has it added
+     to its load list. See LOCATIONS[].kits — North Winn is false on Matt's 9/11
+     statement that the hardware ships to the Parts ship-to instead. */
+  if(!LOC || !LOC.kits) return [];
   var k = KITS[x.a];
   if(!k || racks <= 0) return [];
   var wheels = racks * x.per;
@@ -452,19 +692,67 @@ function uncounted(){
 /* 'p' = Bandit's number, for anything the driver reads in Bandit's yard.
    'a' = Alma's number, for anything that reaches Store 100. */
 function label(list, field){
-  return list.map(function(x){ return x === null ? 'Bldg 5.5' : x[field]; });
+  return list.map(function(x){ return x === null ? LOC.stagingShort : x[field]; });
 }
 
 /* Where completed counts are sent. UNCHANGED from v1 — Brad's n8n intake. */
 var SUBMIT_URL = 'https://almatire.app.n8n.cloud/webhook/bandit-rack-count';
-var QUEUE_KEY  = 'bandit_rack_count_pending_v1';
+
+/* ⚠ BUMPED v1 → v2 WITH THE TWO-LOCATION CHANGE, AND THE BUMP IS NOT COSMETIC.
+   A count queued offline before this version carries no `location` and n8n has
+   no safe way to guess which plant it came from. Routed to whichever branch is
+   the fallback, it orders the right racks to the wrong plant, silently. A new
+   key strands any pre-v4 queue on the phone instead of misrouting it.
+   n8n must REJECT a payload with no `location` rather than defaulting it. */
+var QUEUE_KEY  = 'bandit_rack_count_pending_v2';
+
+/* Last submitted date per location, so the picker can say what has been done
+   today. Display only — nothing gates on it. */
+var SUBMIT_LOG_KEY = 'bandit_rack_count_last_v1';
+function todayKey(){
+  var t = new Date();
+  return t.getFullYear() + '-' + (t.getMonth()+1) + '-' + t.getDate();
+}
+function getLog(){
+  try { return JSON.parse(localStorage.getItem(SUBMIT_LOG_KEY) || '{}'); } catch(e){ return {}; }
+}
+function markSubmitted(id){
+  try {
+    var g = getLog(); g[id] = todayKey();
+    localStorage.setItem(SUBMIT_LOG_KEY, JSON.stringify(g));
+  } catch(e){}
+}
+
+/* ---- count reference -------------------------------------------------
+   VMI-NW-YYYYMMDD / VMI-MAIN-YYYYMMDD, minted here (not in n8n) so one number
+   is on the driver's screen, the internal email, the PO request and the log,
+   all tracing to one submission. Matt, 9/14: proposal not fully settled on
+   wording, but confirmed to build now in this format. -2 suffix only if this
+   plant is submitted twice in one calendar day.
+   Side effect: increments and persists this plant's same-day submit count,
+   so this must only be called once per actual submission (see buildPayload). */
+var REF_COUNT_KEY = 'bandit_rack_count_refcount_v1';
+var REF_CODE = { north_winn: 'NW', main: 'MAIN' };
+function pad2(n){ return n < 10 ? '0' + n : '' + n; }
+function nextCountRef(locId){
+  var raw = {};
+  try { raw = JSON.parse(localStorage.getItem(REF_COUNT_KEY) || '{}'); } catch(e){}
+  var today = todayKey();
+  var prior = raw[locId];
+  var n = (prior && prior.date === today) ? prior.n + 1 : 1;
+  raw[locId] = { date: today, n: n };
+  try { localStorage.setItem(REF_COUNT_KEY, JSON.stringify(raw)); } catch(e){}
+  var t = new Date();
+  var ymd = t.getFullYear() + pad2(t.getMonth()+1) + pad2(t.getDate());
+  return 'VMI-' + REF_CODE[locId] + '-' + ymd + (n > 1 ? '-' + n : '');
+}
 
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 function pad(s,n){ s=String(s); while(s.length<n) s+=' '; return s; }
 
 /* Plain-text column width for the Alma number, driven by the widest one actually in
    PARTS so a longer part number can never silently collide with the next column. */
-var ALMA_W = PARTS.reduce(function(w,x){ return Math.max(w, x.a.length); }, 6) + 2;
+var ALMA_W = 16;   /* recomputed per location in setLocation() */
 
 /* racks of this part to load = owned - standing, floored at zero */
 function toLoad(x, i){
@@ -481,7 +769,7 @@ function build(){
   var h = '';
   PARTS.forEach(function(x,i){
     var pal = x.kind === 'pallet';
-    h += '<div class="part'+(pal?' pal':'')+'">'
+    h += '<div class="part'+(pal?' pal':'')+(x.c?' c-'+x.c:'')+'">'
       +   '<div class="phead">'
       /* Bandit's own number leads. This app is used in Bandit's yard, reading Bandit's
          signage — Alma numbers mean nothing to anyone standing there. The internal
@@ -491,12 +779,17 @@ function build(){
       +     '<div class="psap">Alma '+esc(x.a)+' &middot; SAP '+esc(x.s)+'</div>'
       +     '<span class="powns">'
       +       (pal ? 'A full pallet is ' + x.per + ' &middot; new one at ' + x.trg + ' or fewer'
-                   : 'Bandit owns ' + x.n + ' racks &middot; ' + x.per + ' each')
+                   : 'Bandit owns ' + x.n + ' rack' + (x.n === 1 ? '' : 's') + ' &middot; ' + x.per + ' each')
       +     '</span>'
+      +     (x.c ? '<span class="pcol c-'+x.c+'">'+x.c+' racks</span>' : '')
       +   '</div>'
+      +   (x.note ? '<div class="pnote">'+x.note+'</div>' : '')
       +   '<div class="rows">'
-      +     (pal ? row(i,'pcs','Pieces left on the floor','<b>today&rsquo;s delivery included</b> &middot; count them all')
-                 : row(i,'f','Racks standing','<b>today&rsquo;s delivery included</b> &middot; part used still counts as one'))
+      /* Wording mirrors the numbered how-to at the top of the sheet. Matt 9/11: if one
+         is ever reworded, reword both — a driver who reads two versions of the same
+         instruction trusts neither. */
+      +     (pal ? row(i,'pcs','Product left on the pallet','<b>today&rsquo;s delivery included</b> &middot; count them all')
+                 : row(i,'f','Racks standing','<b>today&rsquo;s delivery included</b> &middot; partially filled still counts as one rack'))
       +   '</div>'
       +   '<div class="calc zero" id="c'+i+'"></div>'
       + '</div>';
@@ -518,6 +811,7 @@ function row(i,k,lab,sub){
 }
 
 function render(){
+  if(!LOC) return;                        /* picker is up — nothing to compute */
   var tE=0, tP=0, tF=0, expected=0, over=[];
 
   PARTS.forEach(function(x,i){
@@ -571,17 +865,21 @@ function render(){
   } else if(gap === 0){
     au.className = 'audit ok';
     au.innerHTML = 'Adds up. <b>' + expected + '</b> racks not standing at VMI, <b>' + E55
-      + '</b> in the pile. Whole fleet accounted for.';
+      + '</b> in the pile. Every ' + esc(LOC.label) + ' rack accounted for.';
   } else if(gap > 0){
     au.className = 'audit off';
     au.innerHTML = '<b>' + gap + ' rack' + (gap===1?'':'s') + ' missing.</b> We expect <b>'
-      + expected + '</b> empties in 5.5 and you counted <b>' + E55
+      + expected + '</b> empties in ' + esc(LOC.stagingShort) + ' and you counted <b>' + E55
       + '</b>. Have a look before you leave, then say so on the count either way.';
   } else {
     au.className = 'audit off';
+    /* The colours exist for exactly this moment. A rack that drifted between plants
+       shows up here as a surplus at one end and a shortage at the other — but only
+       because the two audits are kept separate. Do not net them together. */
     au.innerHTML = '<b>' + (-gap) + ' more in the pile than expected.</b> We expect <b>'
       + expected + '</b> empties and you counted <b>' + E55
-      + '</b>. Might be another customer&rsquo;s rack in there &mdash; worth a look.';
+      + '</b>. Check the colours &mdash; a rack from the other plant, or another '
+      + 'customer&rsquo;s, would look like this.';
   }
 
   document.getElementById('txt').value = summary(tE,tP,tF,expected);
@@ -591,7 +889,10 @@ function summary(tE,tP,tF,expected){
   var d = document.getElementById('mDate').value.trim();
   var v = document.getElementById('mDriver').value.trim();
   var L = [];
-  L.push('BANDIT RACK COUNT - REMUS  ' + (d || '__________'));
+  /* The plant leads the load list and leads it in caps. Two of these land in the
+     same inbox within an hour of each other, on overlapping part numbers. */
+  L.push('BANDIT RACK COUNT - ' + LOC.label.toUpperCase() + '  ' + (d || '__________'));
+  L.push('Ship to: ' + LOC.shipTo);
   L.push('Counted by: ' + (v || '__________'));
 
   var todo = uncounted();
@@ -647,24 +948,29 @@ function summary(tE,tP,tF,expected){
   });
   if(!anyF) L.push('  none - every rack is empty');
 
-  L.push('');
-  L.push('PALLETS - PIECES COUNTED ON THE FLOOR:');
-  PARTS.forEach(function(x,i){
-    if(x.kind !== 'pallet') return;
-    L.push('  ' + pad(x.a,ALMA_W) + pad(x.p,13)
-           + pad(ST[i].pcs === null ? 'not counted' : ST[i].pcs + ' of ' + x.per, 14)
-           + '(new one at ' + x.trg + ' or fewer)');
-  });
+  if(PARTS.some(function(x){ return x.kind === 'pallet'; })){
+    L.push('');
+    L.push('PALLETS - PIECES COUNTED ON THE FLOOR:');
+    PARTS.forEach(function(x,i){
+      if(x.kind !== 'pallet') return;
+      L.push('  ' + pad(x.a,ALMA_W) + pad(x.p,13)
+             + pad(ST[i].pcs === null ? 'not counted' : ST[i].pcs + ' of ' + x.per, 14)
+             + '(new one at ' + x.trg + ' or fewer)');
+    });
+  }
 
-  /* Fleet reconciliation - the only check that catches a rack going missing. */
+  /* Rack reconciliation - the only check that catches a rack going missing.
+     PER LOCATION, deliberately. A fleet-wide check would net a missing Main rack
+     against a surplus North Winn one and report clean, which is the exact failure
+     the colour map exists to make visible. Never combine them. */
   L.push('');
-  L.push('RACK CHECK:');
-  L.push('  ' + pad('Expected empty in Bldg 5.5', 30) + expected);
-  L.push('  ' + pad('Counted empty in Bldg 5.5', 30) + (E55 === null ? 'not counted' : E55));
+  L.push('RACK CHECK - ' + LOC.label.toUpperCase() + ' ONLY:');
+  L.push('  ' + pad('Expected empty in ' + LOC.stagingShort, 30) + expected);
+  L.push('  ' + pad('Counted empty in ' + LOC.stagingShort, 30) + (E55 === null ? 'not counted' : E55));
   if(todo.length){
     L.push('  Skipped - the count is incomplete, so this check means nothing.');
   } else if(expected === E55){
-    L.push('  Adds up - whole fleet accounted for.');
+    L.push('  Adds up - every ' + LOC.label + ' rack accounted for.');
   } else if(expected > E55){
     L.push('  ** ' + (expected - E55) + ' RACK(S) UNACCOUNTED FOR **');
   } else {
@@ -680,7 +986,11 @@ function summary(tE,tP,tF,expected){
   L.push('');
   L.push('TOTAL: ' + tE + ' container' + (tE===1?'':'s') + ' to load = ' + tP + ' pieces. '
          + tF + ' racks standing.');
-  L.push('Kitted fasteners/caps ship with their parent wheel - not counted.');
+  if(LOC.kits){
+    L.push('Kitted fasteners/caps ship with their parent wheel - not counted.');
+  } else {
+    L.push('No kitted hardware on this load.');
+  }
   return L.join('\n');
 }
 
@@ -757,7 +1067,23 @@ function buildPayload(){
   var diff = expected - E55;
   return {
     submittedAt: new Date().toISOString(),
-    date: d, driver: v, plant: 'Bandit — Remus',
+    date: d, driver: v,
+    /* ---- NEW, AND THIS IS THE BREAKING CHANGE FOR n8n ----------------------
+       `location` is the routing key. Stable machine string, never a display
+       name — a submission re-read a year from now must not depend on how the
+       header happened to read that week. Values: 'north_winn' | 'main'.
+       ('remus' was the Main key until 9/11 and never shipped. Nothing should
+       accept it.)
+
+       n8n must ROUTE on it and must REJECT a payload that has none. Defaulting
+       a location-less payload sends the right racks to the wrong plant and
+       nothing downstream would catch it.
+
+       `plant` and `shipTo` are the human-facing strings for templates. */
+    location: LOC.id,
+    plant: LOC.plant,
+    shipTo: LOC.shipTo,
+    countRef: nextCountRef(LOC.id),
     parts: parts, pallets: pallets,
     totals: { containersToLoad: tE, piecesToLoad: tP, fullRacksStanding: tF },
     ranOut: ranOut,
@@ -898,20 +1224,38 @@ document.getElementById('bSubmit').addEventListener('click', function(){
     return;
   }
   var payload = buildPayload();
+  var sentLoc = LOC;
   btn.disabled = true;
   setStatus('Submitting…', 'wait');
   postPayload(payload).then(function(ok){
     btn.disabled = false;
+    /* Logged on queue as well as on send. The count IS taken either way, and the
+       picker's "counted today" line is about what the driver has walked, not
+       about what has reached n8n yet. */
+    markSubmitted(sentLoc.id);
     if(ok){
       submitArmed = false;
-      setStatus('Sent — thanks, this count is in.', 'ok');
+      setStatus('Sent — ' + sentLoc.label + ' is in.', 'ok');
       flushQueue();
     } else {
       var q = getQueue();
       q.push(payload);
       setQueue(q);
       renderPending();
-      setStatus('No signal — saved on this phone, will send automatically.', 'wait');
+      setStatus('No signal — ' + sentLoc.label + ' saved on this phone, will send automatically.', 'wait');
+    }
+    /* Straight to the other plant. The driver's next move after sending North
+       Winn is a fifteen-minute drive to Main, and making him find a button for
+       that is how a count gets keyed into the wrong plant. */
+    var other = LOCATIONS.filter(function(L){
+      return L.id !== sentLoc.id && getLog()[L.id] !== todayKey();
+    })[0];
+    if(other){
+      setTimeout(function(){
+        if(confirm(sentLoc.label + ' count is done.\n\nStart the ' + other.label + ' count now?')){
+          setLocation(other.id);
+        }
+      }, 700);
     }
   });
 });
@@ -935,11 +1279,12 @@ function boxes(n){
 
 function buildPaper(){
   var h = '<div class="phdr">'
-        + '<div><div class="ptitle">Bandit rack count &mdash; Remus</div>'
+        + '<div><div class="ptitle">Bandit rack count &mdash; ' + esc(LOC.label) + '</div>'
         +   '<div class="psub">Alma Tire Service &middot; <b>unload today&rsquo;s delivery first</b>, then tick '
         +   'one box per rack still holding wheels as you walk the row &mdash; today&rsquo;s drop included, '
-        +   'and a rack part used still counts as one. Write the total. Do not count pieces. '
-        +   '<b>An empty rack still in the row goes to Bldg 5.5 now &mdash; do not tick it.</b></div></div>'
+        +   'and a partially filled rack still counts as one rack. Write the total. Do not count pieces. '
+        +   '<b>An empty rack still in the row: get it to ' + esc(LOC.stagingShort)
+        +   ' and count it as empty &mdash; do not tick it here.</b></div></div>'
         + '<div class="pmeta"><div>Date <u></u></div><div>Counted by <u></u></div></div>'
         + '</div>';
 
@@ -951,32 +1296,38 @@ function buildPaper(){
     if(x.kind === 'pallet') return;
     h += '<tr>'
       +  '<td class="l"><b>'+esc(x.p)+'</b><br><span class="pd2">'+esc(x.d)+'</span>'
-      +    '<br><span class="pd3">Alma '+esc(x.a)+' &middot; 1 rack = '+x.per+' pcs &middot; Bandit owns '+x.n+'</span></td>'
+      +    '<br><span class="pd3">Alma '+esc(x.a)+' &middot; 1 rack = '+x.per+' pcs &middot; Bandit owns '+x.n+'</span>'
+      +    (x.note ? '<br><span class="pnote2">'+x.note+'</span>' : '')+'</td>'
       +  '<td class="c">'+boxes(x.n)+'</td><td class="n"><span class="wb"></span></td>'
       +  '</tr>';
   });
   h += '</tbody></table>';
 
-  h += '<div class="e55p"><div><b>Empty racks in Building 5.5</b><br>'
+  h += '<div class="e55p"><div><b>Empty racks in ' + esc(LOC.stagingLong) + '</b><br>'
     +  '<span class="pd3">All parts together. Just the total &mdash; no part numbers needed.</span></div>'
     +  '<span class="wb"></span></div>';
 
-  h += '<div class="psec">Pallets &mdash; count the pieces left on the floor. '
-    +  'Today&rsquo;s delivery included. Do not work out whether it needs one; just write the number.</div>';
-  h += '<table class="ptab pal2"><tbody>';
-  PARTS.forEach(function(x){
-    if(x.kind !== 'pallet') return;
-    h += '<tr><td class="l"><b>'+esc(x.p)+'</b><br><span class="pd2">'+esc(x.d)+'</span>'
-      +  '<br><span class="pd3">Alma '+esc(x.a)+' &middot; a full pallet is '+x.per+' pcs</span></td>'
-      +  '<td class="ch">New pallet comes at <b>'+x.trg+' or fewer</b></td>'
-      +  '<td class="n"><span class="wb"></span></td></tr>';
-  });
-  h += '</tbody></table>';
+  if(PARTS.some(function(x){ return x.kind === 'pallet'; })){
+    h += '<div class="psec">Pallets &mdash; count the actual product left on the pallet. '
+      +  'Today&rsquo;s delivery included. Do not work out whether it needs one; just write the number.</div>';
+    h += '<table class="ptab pal2"><tbody>';
+    PARTS.forEach(function(x){
+      if(x.kind !== 'pallet') return;
+      h += '<tr><td class="l"><b>'+esc(x.p)+'</b><br><span class="pd2">'+esc(x.d)+'</span>'
+        +  '<br><span class="pd3">Alma '+esc(x.a)+' &middot; a full pallet is '+x.per+' pcs</span></td>'
+        +  '<td class="ch">New pallet comes at <b>'+x.trg+' or fewer</b></td>'
+        +  '<td class="n"><span class="wb"></span></td></tr>';
+    });
+    h += '</tbody></table>';
+  }
 
   h += '<div class="pfoot">'
-    +  '<b>Rack check.</b> Racks standing plus empties in 5.5 should equal what Bandit owns. '
+    +  '<b>Rack check.</b> Racks standing plus empties in ' + esc(LOC.stagingShort)
+    +  ' should equal what Bandit owns at ' + esc(LOC.label) + '. '
     +  'If the pile is short, say so before you leave &mdash; that is the only way we catch a lost rack.'
-    +  '<br><b>Never counted:</b> fasteners, caps and swivel nuts &mdash; they ship with their parent wheel.'
+    +  (LOC.kits
+        ? '<br><b>Never counted:</b> fasteners, caps and swivel nuts &mdash; they ship with their parent wheel.'
+        : '<br><b>No kitted hardware on this run.</b>')
     +  '<br><b>Back to:</b> Matt C, Alma Tire Service &middot; matt@almatire.com &middot; 989.205.7037'
     +  '<div class="sig">Notes / anything odd in the yard <u></u><u></u></div>'
     +  '</div>';
@@ -984,15 +1335,109 @@ function buildPaper(){
   document.getElementById('paper').innerHTML = h;
 }
 
-/* ---- init ---- */
-(function(){
+/* ---- location picker -----------------------------------------------------
+   North Winn is rendered first and badged "count first". That is an instruction,
+   not a sort: Matt, 9/11 — "nw will always be first." If Main is opened while
+   North Winn has not been submitted today, the app says so once and lets him
+   carry on. He may have a real reason; stranding a driver over a house rule is
+   worse than the rule being broken. */
+function showPicker(){
+  var log = getLog(), today = todayKey(), h = '';
+  LOCATIONS.forEach(function(L, idx){
+    var done = log[L.id] === today;
+    h += '<button class="lbtn' + (idx ? ' second' : '') + '" type="button" data-loc="' + L.id + '">'
+      +    '<span class="ln">' + esc(L.label)
+      +      '<span class="ord">' + (idx ? 'then' : 'count first') + '</span></span>'
+      +    '<span class="lsub">' + L.note + ' &middot; ' + L.parts.length + ' part'
+      +      (L.parts.length === 1 ? '' : 's') + ' on program</span>'
+      +    '<span class="lwhen ' + (done ? 'done' : 'todo') + '">'
+      +      (done ? '&#10003; counted today' : 'not counted today') + '</span>'
+      +  '</button>';
+  });
+  document.getElementById('pickList').innerHTML = h;
+  document.getElementById('pick').style.display   = 'block';
+  document.getElementById('app1').style.display   = 'none';
+  document.getElementById('app2').style.display   = 'none';
+  document.getElementById('stick').style.display  = 'none';
+  LOC = null; PARTS = []; ST = []; E55 = null;
+  renderPending();
+}
+
+/* Everything the app computes hangs off this. Called once per count. */
+function setLocation(id){
+  LOC = LOCATIONS.filter(function(L){ return L.id === id; })[0];
+  if(!LOC) return;
+  PARTS  = LOC.parts;
+  ST     = PARTS.map(function(){ return {f:null, pcs:null}; });
+  E55    = null;
+  submitArmed = false;
+  ALMA_W = PARTS.reduce(function(w,x){ return Math.max(w, x.a.length); }, 6) + 2;
+
+  document.title = LOC.title;
+  document.getElementById('hTitle').textContent = LOC.title;
+  var pill = document.getElementById('hPill');
+  pill.className = 'locpill ' + LOC.cls;
+  pill.textContent = LOC.label;
+  var st = document.getElementById('stick');
+  st.className = 'stick ' + LOC.cls;
+  st.textContent = 'Counting ' + LOC.label + ' — ship to ' + LOC.shipTo;
+  st.style.display = 'block';
+
+  /* Staging-area name, wherever it appears in the fixed markup. */
+  Array.prototype.forEach.call(document.querySelectorAll('.sLong'), function(el){
+    el.textContent = LOC.stagingLong;
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.sShort'), function(el){
+    el.textContent = LOC.stagingShort;
+  });
+  /* North Winn has no pallet path at all — no pieces on the floor, no flag levels. */
+  var hasPal = PARTS.some(function(x){ return x.kind === 'pallet'; });
+  Array.prototype.forEach.call(document.querySelectorAll('.palOnly'), function(el){
+    el.style.display = hasPal ? '' : 'none';
+  });
+
+  document.getElementById('fE55').value = '';
+  document.getElementById('mDriver').value = '';
   var t = new Date();
   document.getElementById('mDate').value =
     (t.getMonth()+1) + '/' + t.getDate() + '/' + String(t.getFullYear()).slice(2);
+
+  document.getElementById('pick').style.display = 'none';
+  document.getElementById('app1').style.display = '';
+  document.getElementById('app2').style.display = '';
+  setStatus('', '');
+
   build();
   buildPaper();
   render();
   renderPending();
+  window.scrollTo(0, 0);
+}
+
+document.addEventListener('click', function(ev){
+  var b = ev.target.closest ? ev.target.closest('button[data-loc]') : null;
+  if(!b) return;
+  var id  = b.getAttribute('data-loc');
+  var log = getLog();
+  /* The nudge, not a block. */
+  if(id === 'main' && log.north_winn !== todayKey()){
+    if(!confirm('North Winn has not been counted today.\n\nNorth Winn is normally counted first. Open Main anyway?')) return;
+  }
+  setLocation(id);
+});
+
+/* Leaving a count in progress throws away everything typed — nothing is saved
+   until Submit — so it asks, but only when there is something to lose. */
+document.getElementById('bSwap').addEventListener('click', function(){
+  var typed = E55 !== null || ST.some(function(s){ return s.f !== null || s.pcs !== null; });
+  if(typed && !confirm('Leave this count?\n\nThe numbers you have entered for '
+      + LOC.label + ' will be cleared. Nothing has been sent yet.')) return;
+  showPicker();
+});
+
+/* ---- init ---- */
+(function(){
+  showPicker();
   flushQueue();
 })();
 </script>
