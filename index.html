@@ -405,7 +405,14 @@ h2.sec{
 
   <h2 class="sec">Send it in</h2>
   <div class="out">
-    <textarea id="txt" readonly></textarea>
+    <!-- Hidden 9/16 per Matt: this plain-text preview isn't read by anything —
+         buildPayload() computes summaryText itself and never reads #txt back
+         out of the DOM — it was purely a visual preview, and a cramped
+         scrolling textarea right before Submit did more to worry a driver
+         than to help one. Left in the DOM (still populated below) rather
+         than deleted, in case screen debugging ever wants it back — just
+         flip this to visible. -->
+    <textarea id="txt" readonly style="display:none"></textarea>
     <div class="btns">
       <button id="bSubmit">Submit count</button>
       <button class="alt" id="bPrint">Print backup sheet</button>
@@ -439,6 +446,11 @@ h2.sec{
                          at submit per Matt's package §4. Not in Matt's file as
                          delivered; added here since he confirmed building it
                          now. See nextCountRef() near markSubmitted().
+   v4.2  (2026-09-16, Brad) — Hidden the #txt plain-text preview under "Send
+                         it in" (Matt: looked like "a bad MaddenCo report all
+                         scrunched up," nobody was going to read it before
+                         Submit). Purely cosmetic — nothing reads #txt back
+                         out, so hiding it changes no behavior.
 
    WHAT CHANGED FROM v1 AND WHY
    ----------------------------
