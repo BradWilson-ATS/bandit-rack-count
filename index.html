@@ -451,6 +451,10 @@ h2.sec{
                          scrunched up," nobody was going to read it before
                          Submit). Purely cosmetic — nothing reads #txt back
                          out, so hiding it changes no behavior.
+   v4.3  (2026-09-22, Brad) — buildPayload() now emits `color` on parts[]
+                         (null for pallets). The app has always had this in
+                         PARTS[].c; it just wasn't in the payload. n8n and the
+                         driver PDF render it now — see deploy_intake_workflow.py.
 
    WHAT CHANGED FROM v1 AND WHY
    ----------------------------
@@ -1070,7 +1074,11 @@ function buildPayload(){
         emptyRacks: empty,               /* derived, not counted — see note above */
         fullRacksStanding: full,         /* null when not counted */
         piecesToLoad: pieces,
-        sendWith: kitsFor(x, empty)      /* NEW — hardware owed; [] when none or nothing to load */
+        sendWith: kitsFor(x, empty),     /* NEW — hardware owed; [] when none or nothing to load */
+        color: x.c || null               /* NEW, 9/22 — the app already has this in scope (LOCATIONS[].parts[].c);
+                                             emitting it is what lets n8n render it without keeping a second copy
+                                             of the color map. Matt, 9/22: same reasoning as the "4 racks" literal —
+                                             one source of truth, not two that can drift. */
       });
     }
   });
