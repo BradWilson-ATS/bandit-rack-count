@@ -455,6 +455,15 @@ h2.sec{
                          (null for pallets). The app has always had this in
                          PARTS[].c; it just wasn't in the payload. n8n and the
                          driver PDF render it now — see deploy_intake_workflow.py.
+   v4.4  (2026-10-23, Brad) — Matt's "shorter countRef + double-submit lock":
+                         countRef is MAIN-YYMMDD / NW-YYMMDD (MaddenCo's REF
+                         field holds ~15 chars; VMI-MAIN-20261008 was cut to
+                         VMI-MAIN-202610). n8n may re-suffix it if another phone
+                         already sent this plant today, and returns the final
+                         ref. After a send or a queue, that plant is locked on
+                         this phone until midnight (LOCK_KEY), so a second tap
+                         can't make a second PO request. postPayload() now tells
+                         "no response" apart from "server answered with an error".
 
    WHAT CHANGED FROM v1 AND WHY
    ----------------------------
@@ -740,11 +749,14 @@ function markSubmitted(id){
 }
 
 /* ---- count reference -------------------------------------------------
-   VMI-NW-YYYYMMDD / VMI-MAIN-YYYYMMDD, minted here (not in n8n) so one number
-   is on the driver's screen, the internal email, the PO request and the log,
-   all tracing to one submission. Matt, 9/14: proposal not fully settled on
-   wording, but confirmed to build now in this format. -2 suffix only if this
-   plant is submitted twice in one calendar day.
+   NW-YYMMDD / MAIN-YYMMDD, minted here so one number is on the driver's
+   screen, the internal email, the PO request and the log, all tracing to one
+   submission. -2 suffix only if this plant is submitted twice in one calendar
+   day from this phone. Was VMI-NW/MAIN-YYYYMMDD until v4.4 — MaddenCo's REF
+   NUMBER field holds about 15 characters and cut the day off; longest new
+   ref is 13 (MAIN-261026-2). n8n still accepts the old format from phones
+   that haven't loaded v4.4, and may hand back a different suffix when
+   another phone already sent this plant today (see postPayload).
    Side effect: increments and persists this plant's same-day submit count,
    so this must only be called once per actual submission (see buildPayload). */
 var REF_COUNT_KEY = 'bandit_rack_count_refcount_v1';
@@ -759,8 +771,44 @@ function nextCountRef(locId){
   raw[locId] = { date: today, n: n };
   try { localStorage.setItem(REF_COUNT_KEY, JSON.stringify(raw)); } catch(e){}
   var t = new Date();
-  var ymd = t.getFullYear() + pad2(t.getMonth()+1) + pad2(t.getDate());
-  return 'VMI-' + REF_CODE[locId] + '-' + ymd + (n > 1 ? '-' + n : '');
+  var ymd = String(t.getFullYear()).slice(2) + pad2(t.getMonth()+1) + pad2(t.getDate());
+  return REF_CODE[locId] + '-' + ymd + (n > 1 ? '-' + n : '');
+}
+
+/* ---- per-plant submit lock (v4.4) ------------------------------------
+   Matt, 10/23: the button used to re-enable after every send, sent or
+   queued, with the numbers still on screen — a second tap built a new
+   payload with a new -2 ref, which n8n rightly treats as a new count, and
+   Bandit got two PO requests (10/20, VMI-MAIN-20261020 and -2, 50s apart).
+   Once a plant is sent or queued on this phone it stays locked until
+   midnight. No unlock button: a same-day correction comes from another
+   phone, and n8n gives that one its own suffix.
+   { locId: { date: todayKey(), ref, state: 'sent' | 'queued' } }.
+   Separate from SUBMIT_LOG_KEY on purpose — that one is display-only. */
+var LOCK_KEY = 'bandit_rack_count_lock_v1';
+function getLocks(){
+  try { return JSON.parse(localStorage.getItem(LOCK_KEY) || '{}'); } catch(e){ return {}; }
+}
+/* A lock from any earlier day is no lock — that is the midnight reset. */
+function getLock(locId){
+  var l = getLocks()[locId];
+  return (l && l.date === todayKey()) ? l : null;
+}
+function setLock(locId, ref, state){
+  try {
+    var g = getLocks(); g[locId] = { date: todayKey(), ref: ref, state: state };
+    localStorage.setItem(LOCK_KEY, JSON.stringify(g));
+  } catch(e){}
+}
+/* Puts the open plant's lock (or lack of one) on the Submit button. */
+function applyLock(){
+  var btn = document.getElementById('bSubmit');
+  var lk = LOC ? getLock(LOC.id) : null;
+  if(!lk){ btn.disabled = false; btn.textContent = 'Submit count'; return; }
+  btn.disabled = true;
+  btn.textContent = lk.state === 'sent'
+    ? 'Sent ✓ ' + lk.ref
+    : 'Saved ✓ ' + lk.ref + ', will send automatically';
 }
 
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
@@ -1140,6 +1188,11 @@ function renderPending(){
     + 'Saved on this phone &mdash; will go out automatically once you have signal.';
 }
 
+/* Resolves { ok, countRef } on success — countRef is the FINAL ref n8n
+   assigned (it can add a suffix if another phone already sent this plant
+   today), or undefined if n8n didn't say. On failure { ok:false, kind }:
+   'noresponse' = fetch failed or the 15s timeout (no signal); 'server' = n8n
+   answered with an error. Both get queued; only the wording differs. */
 function postPayload(payload){
   var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
   var t = ctrl ? setTimeout(function(){ ctrl.abort(); }, 15000) : null;
@@ -1150,11 +1203,28 @@ function postPayload(payload){
     signal: ctrl ? ctrl.signal : undefined
   }).then(function(resp){
     if(t) clearTimeout(t);
-    return resp.ok;
+    if(!resp.ok) return { ok: false, kind: 'server' };
+    return resp.json().then(
+      function(j){ return { ok: true, countRef: j && j.countRef }; },
+      function(){ return { ok: true }; }
+    );
   }).catch(function(){
     if(t) clearTimeout(t);
-    return false;
+    return { ok: false, kind: 'noresponse' };
   });
+}
+
+/* A queued count just went out: flip its plant's lock to sent, under the
+   ref n8n gave it. Only if the lock is today's and still for this payload —
+   a count queued yesterday is not today's lock. */
+function lockSent(payload, finalRef){
+  var lk = getLock(payload.location);
+  if(!lk || lk.ref !== payload.countRef) return;
+  setLock(payload.location, finalRef || payload.countRef, 'sent');
+  if(LOC && LOC.id === payload.location){
+    applyLock();
+    setStatus('Sent — ' + LOC.label + ' is in.', 'ok');  /* replaces "No signal" */
+  }
 }
 
 function flushQueue(){
@@ -1164,8 +1234,9 @@ function flushQueue(){
   function next(){
     if(!remaining.length){ setQueue([]); renderPending(); return Promise.resolve(); }
     var item = remaining[0];
-    return postPayload(item).then(function(ok){
-      if(!ok) { setQueue(remaining); renderPending(); return; }
+    return postPayload(item).then(function(r){
+      if(!r.ok) { setQueue(remaining); renderPending(); return; }
+      lockSent(item, r.countRef);
       remaining.shift();
       return next();
     });
@@ -1247,14 +1318,16 @@ document.getElementById('bSubmit').addEventListener('click', function(){
   var sentLoc = LOC;
   btn.disabled = true;
   setStatus('Submitting…', 'wait');
-  postPayload(payload).then(function(ok){
-    btn.disabled = false;
+  postPayload(payload).then(function(r){
     /* Logged on queue as well as on send. The count IS taken either way, and the
        picker's "counted today" line is about what the driver has walked, not
        about what has reached n8n yet. */
     markSubmitted(sentLoc.id);
-    if(ok){
-      submitArmed = false;
+    submitArmed = false;
+    /* Sent or queued, this plant is locked for the day (v4.4) — the button
+       does NOT come back on. applyLock() below puts the ref on it. */
+    if(r.ok){
+      setLock(sentLoc.id, r.countRef || payload.countRef, 'sent');
       setStatus('Sent — ' + sentLoc.label + ' is in.', 'ok');
       flushQueue();
     } else {
@@ -1262,8 +1335,14 @@ document.getElementById('bSubmit').addEventListener('click', function(){
       q.push(payload);
       setQueue(q);
       renderPending();
-      setStatus('No signal — ' + sentLoc.label + ' saved on this phone, will send automatically.', 'wait');
+      setLock(sentLoc.id, payload.countRef, 'queued');
+      if(r.kind === 'server'){
+        setStatus('Server problem. ' + sentLoc.label + ' saved on this phone and will retry. Don’t recount.', 'wait');
+      } else {
+        setStatus('No signal — ' + sentLoc.label + ' saved on this phone, will send automatically.', 'wait');
+      }
     }
+    if(LOC === sentLoc) applyLock();
     /* Straight to the other plant. The driver's next move after sending North
        Winn is a fifteen-minute drive to Main, and making him find a button for
        that is how a count gets keyed into the wrong plant. */
@@ -1426,6 +1505,7 @@ function setLocation(id){
   document.getElementById('app1').style.display = '';
   document.getElementById('app2').style.display = '';
   setStatus('', '');
+  applyLock();   /* reopened the same day: shows Sent/Saved, button stays off */
 
   build();
   buildPaper();
